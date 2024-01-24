@@ -1,0 +1,110 @@
+Installation
+Step1: First step to install the latest OS REDHAT 9.2  with specific hardware give below.
+
+    A:  RAM: 16GB
+    B:  STOREAGE: 500GB
+    C:  CPU: 2VCPU
+
+Step2: After complete the os installation Create the root password and if you need custom ip addrees than in network
+setting give the Ip address Subnetmask and  Gateway address & click on reboot.
+
+Step3: After installation complete login by root username & password.
+
+Step4: If the yum repository can't exists in your machine please create your own repository step given below.
+
+       a:  cd /etc/yum.repos.d/
+       b: touch redhatdvd.repo
+        c:   vim redhatdvd.repo
+               [appstream]
+              name=appstream
+              baseurl=file:///mnt/AppStream
+              gpgcheck=0
+               enabled=1
+        
+               [baseos]
+              name=baseos
+              baseurl=file:///mnt/BaseOS
+              gpgcheck=0
+               enabled=1
+  :wq!    ==>> exist from the file
+
+Step5: Update the linux server and install the required packages.
+
+   Command1:  yum clean all
+   Command2:  yum repolist
+   Command3:  yum update -y
+   Command4:  yum install net-tools tree  git ansible* -y
+   command5:  ansible --version    ==>> see the ansible version and its bydefault inventory file reading path.
+   command6: mkdir /ansible
+   comnand7: cd /ansible  &&  touch inventory
+   command8: cp -rvf /etc/ansible/ansible.cfg   .
+   command9:  vim inventory
+   [prod]
+   localahost   ansible_ssh_user=root    ansible_ssh_pass=[give root password]   :wq! ==>> exit from file
+   command10:  vim ansible.cfg
+    replace inventory path with new inevntory path inventory=/ansible/inventory   :wq! ==>>  exit from file
+   command11: export ANSIBLE_CONFIG=/ansible/ansible.cfg
+
+Step6: Clone the the repository from git hub.
+
+   command1: git clone https://github.com/Ishan-Bharti/file-move-aws.repo.git
+   command2: cd file-move-aws.repo.git  && mkdir /container
+   command3: cp -rvf container/*   /container/  &&  cd /container
+
+Step7: Run the playbook to install the Docker Engine with Containerd runtime.
+
+  command1: ansible-playbook  docker-install.yml  ==>> this playbook install the docker engine
+  command2:  ./docker-composeinstall.sh   ==>> this script install the docker-compose plugins
+  command3: docker-compose -f  /container/docker-composetest.yml up -d  ==>> this command will pull all the images and moun the
+  volume and run the container
+
+Testing
+
+Step1: If the ansible playbook successfully complete verify the docker engine is ready to create container or not.
+
+   command1: systemctl status docker   ==>> this command verify the docker service is running or not.
+   command2: systemctl status containerd  ==>> this command verify the containerd runtime is started or not.
+   command3: docker ps ==>> this command can check the docker is reday to create container or not.
+   
+Step2: Check the Docker-Engine docker- Compose & Ansible version.
+
+  command1: docker -v   ==>> this command can show the docker version you have installed.
+  command2: docker-compose -v ==>> this command can show the docker-compose version
+  command3: ansible --version  ==>> this command can show the ansible version you have installed.
+
+Step3: Check the host where the ansible can trigger the task.
+
+  command: ansible all --list-hosts  ==>> this command show ansible can trigger task on host.
+  command2: ansible-playbook  [host]  [playbook-name]  ==>> this command can run the playbook on target host that define in inventory.
+  
+NOTE: after complete the playbook run the systemctl command given in step1 to verifty the playbook successful task complete or not.
+
+Step4:  Step to run the Docker-Compose and verify the all container are properly running or not.
+
+  command1: docker-compose -f [docker-compose-file-path] up -d ==>> this command can pull all the images from docker-hub and run all
+   the container in detach mode.
+  command2:  docker ps ==>> this command can show how many container are currently running.
+   command3: docker ps -a ==>> this command can show how many container are in existed state.
+
+
+
+ACCESS URL FROM WEB CONSOLE
+
+Step1: Check elasticsearch and kibana from web.
+
+      http://ip-address:9200   ==>> this is the url of elasticsearch
+      http://ip-address:5601  ==>> this is url of kibana
+
+Step2:  Check the node-exporter prometheus and grafana from web.
+
+     http://ip-address:9090  ==>> this is url of prometheus
+     http://ip-address:9100  ==>> this is url of node-exporter
+     http://ip-address:3000  ==>> this is url of grafana
+
+Step3: Check the exporter metrics from web.
+
+      http://ip-address:9427  ==>> this is url for ping-exporter metrics
+      http://ip-address:9115 ==>> this is url for balckbox metrics
+      http://ip-address:9000 ==>> this is url for portainer web UI
+      http://ip-address:8080  ==>> this is url for Cadvisor
+      http://ip-address:8125  ==>> this is url for telegraf
