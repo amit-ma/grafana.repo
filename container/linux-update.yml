@@ -1,0 +1,71 @@
+- name: UPDATE THE LINUX INSTANCE AND INSTALL THE NEW REQUIRE UTILITYIES
+  hosts: localhost
+  gather_facts: true
+  become: true
+
+  tasks:
+
+          - name: Set PasswordAuthentication to yes in sshd_config
+            lineinfile:
+                  path: /etc/ssh/sshd_config
+                  regexp: '^PasswordAuthentication no'
+                  line: 'PasswordAuthentication yes'
+                  state: present
+            notify:
+                  - Restart SSH service
+
+  handlers:
+          - name: Restart SSH service
+            systemd:
+                  name: sshd
+                  state: restarted
+
+          - name: create directory on remote server
+            file:
+                  path: /ansible
+                  state: directory
+
+          - name: copy the ansible.cfg file on remote side
+            copy:
+                  src: /etc/ansible/ansible.cfg
+                  dest: /ansible/
+                  remote_src: true
+
+          - name: run the ansible init command to init the file
+            command: "ansible-config init --disabled > ansible.cfg"
+   
+  
+          - name: create the inventory file
+            file:
+                  path: /ansible/inventory
+                  state: touch
+
+          - name: Add lines to a file
+            lineinfile:
+                  path: /ansible/inventory
+                  line: '[prod]'
+                  insertafter: BOF
+
+          - name: Add another line to the file
+            lineinfile:
+                  path: /path/to/your/file.txt
+                  line: 'localhost ansible_connection=local'
+                  insertafter: AOF
+
+          - name: Uncomment and set custom inventory file in ansible.cfg
+            replace:
+                  path: /etc/ansible/ansible.cfg  # Update the path to your ansible.cfg file
+                  regexp: '^;inventory.*$'
+                  replace: 'inventory = /ansible/inventory'
+
+          - name: Set a variable
+            set_fact:
+                  ANSIBLE_CONFIG: "/ansible/ansible.cfg"
+
+          - name: Add or modify the variable in .bashrc
+            lineinfile:
+                  path: "{{ ansible_env.HOME }}/.bashrc"
+                  line: 'export ANSIBLE_CONFIG="/ansible/ansible.cfg"'
+                  insertafter: EOF
+                  remote_src: true
+            tags: bash_tag

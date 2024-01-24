@@ -1,0 +1,1 @@
+#podman run -d -p 9000:9000  --name portainer --privileged -v /run/podman/podman.sock:/var/run/docker.sock:Z -v /portainer/:/data portainer/portainer-ce:latest

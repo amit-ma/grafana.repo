@@ -1,0 +1,43 @@
+global:
+  scrape_interval: 30s
+  
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['3.110.123.13:9090']
+
+
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['3.110.123.13:9100']
+
+
+  - job_name: 'ping-exporter'
+    static_configs:
+      - targets: ['3.110.123.13:9427']
+
+  
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ['10.10.8.154:8280']
+
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx] # Look for a HTTP 200 response.
+    static_configs:
+    - targets:
+        - https://www.devopstricks.in
+        - https://www.google.com
+        - https://www.facebook.com
+        - https://www.instagram.com
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 3.110.123.13:9115

@@ -1,0 +1,154 @@
+version: '3.7'
+
+services:
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)"
+    ports:
+      - "9100:9100"
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.uml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    volumes:
+      - /container/backup/:/var/lib/grafana
+    user: "0:0"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    restart: always
+
+  Elasticsearch:
+    image: elasticsearch:7.16.2
+    container_name: elasticsearch
+    restart: always
+    volumes:
+    - elastic_data:/usr/share/elasticsearch/data/
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      discovery.type: single-node
+    ports:
+    - '9200:9200'
+    - '9300:9300'
+
+  Logstash:
+    image: logstash:7.16.2
+    container_name: logstash
+    restart: always
+    volumes:
+    - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    - /var/log:/host_logs
+    depends_on:
+      - Elasticsearch
+    ports:
+      - '5044:5044'
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+
+  Kibana:
+    image: kibana:7.16.2
+    container_name: kibana
+    restart: always
+    ports:
+    - '5601:5601'
+    environment:
+      - ELASTICSEARCH_URL=http://3.110.123.13:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=elastic
+    depends_on:
+      - Elasticsearch
+
+
+  ping-exporter:
+    image: docker.io/czerwonk/ping_exporter
+    container_name: ping-exporter
+    volumes:
+      - ./ping-config/:/config:ro
+    ports:
+      - "9427:9427"
+    restart: always
+
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - "8280:8280"
+    restart: always
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter
+    container_name: blackbox-exporter
+    volumes:
+      - ./black.yml:/etc/blackbox_exporter/config.yml
+    ports:
+      - "9115:9115"
+    restart: always
+
+  influxdb:
+    image: influxdb:1.8-alpine
+    container_name: influxdb
+    restart: always
+    environment:
+      - INFLUXDB_DB=influx
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_ADMIN_PASSWORD=admin
+    ports:
+      - '8086:8086'
+    volumes:
+      - /influxdb:/var/lib/influxdb
+
+  telegraf:
+    image: telegraf
+    container_name: telegraf
+    restart: always
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - influxdb
+    links:
+      - influxdb
+    ports:
+    - '8125:8125'
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./portainer:/data
+    ports:
+      - '9000:9000'
+
+volumes:
+  elastic_data: {}
+
+

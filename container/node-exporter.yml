@@ -1,0 +1,40 @@
+---
+- name: Install node-exporter
+  hosts: localhost
+  become: true
+
+  tasks:
+    - name: Download node-exporter binary
+      get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v1.3.1/node_exporter-1.3.1.linux-amd64.tar.gz"
+        dest: "/tmp/node_exporter-1.3.1.linux-amd64.tar.gz"
+
+    - name: Extract node-exporter binary
+      ansible.builtin.unarchive:
+        src: "/tmp/node_exporter-1.3.1.linux-amd64.tar.gz"
+        dest: "/usr/local/bin"
+        remote_src: true
+
+    - name: Create node-exporter user
+      ansible.builtin.user:
+        name: node_exporter
+        system: true
+
+    - name: Set up node-exporter service
+      ansible.builtin.template:
+        src: templates/node_exporter.service.j2
+        dest: /etc/systemd/system/node_exporter.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reload systemd to pick up new service
+      ansible.builtin.systemd:
+        daemon_reload: yes
+
+    - name: Start and enable node-exporter service
+      ansible.builtin.service:
+        name: node_exporter
+        state: started
+        enabled: yes
+
